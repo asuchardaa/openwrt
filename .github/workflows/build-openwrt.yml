@@ -180,7 +180,9 @@ jobs:
       - name: Build firmware
         run: |
           cd openwrt
-          make -j$(nproc) V=s 2>&1 | tail -100
+          make -j$(nproc) V=s 2>&1 | tee /tmp/build.log; tail -200 /tmp/build.log
+          # Zachytit skutečnou chybu
+          grep -E "^(make\[.*\]: \*\*\*|ERROR:)" /tmp/build.log | tail -20
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
@@ -188,3 +190,11 @@ jobs:
           name: openwrt-archer-a9-v6-25.12.4
           path: openwrt/bin/targets/ath79/generic/*archer-a9*
           retention-days: 7
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: /tmp/build.log
+          retention-days: 3
